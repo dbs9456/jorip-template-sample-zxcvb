@@ -1,0 +1,14 @@
+{
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-game.mjs",
+    "check": "npm run build && node --check worker.js",
+    "preview": "node scripts/preview-game.mjs"
+  },
+  "dependencies": {
+    "@chenglou/pretext": "^0.0.8"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}

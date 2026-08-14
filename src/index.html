@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10100f">
+  <meta name="description" content="글자와 소리로 만든 3열 타이포그래피 슬롯">
+  <title>TRIPLE NOISE — TYPE SLOT</title>
+  <style nonce="__NONCE__">
+    :root {
+      color-scheme: dark;
+      --ink: #10100f;
+      --paper: #f5f0df;
+      --acid: #dcff00;
+      --red: #ff4033;
+      --blue: #3152ff;
+      --pink: #ff91c3;
+      --muted: rgba(245, 240, 223, .38);
+      --mono: "Courier New", Courier, "Apple SD Gothic Neo", "Noto Sans Mono CJK KR", monospace;
+    }
+    * { box-sizing: border-box; }
+    html { min-width: 320px; min-height: 100%; background: var(--ink); }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--paper);
+      background: var(--ink);
+      font-family: var(--mono);
+    }
+    button { font: inherit; }
+    .skip-link {
+      position: fixed; left: 12px; top: 12px; z-index: 100;
+      padding: 9px 12px; color: var(--ink); background: var(--acid);
+      transform: translateY(calc(-100% - 24px));
+    }
+    .skip-link:focus-visible { transform: none; }
+    .type-stage {
+      position: fixed; inset: 0; z-index: 0; overflow: hidden;
+      pointer-events: none;
+    }
+    #typeField { width: 100%; height: 100%; opacity: .09; }
+    .type-stage::after {
+      content: ""; position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 0 24%, rgba(16,16,15,.72) 70%),
+        linear-gradient(rgba(16,16,15,.34), rgba(16,16,15,.82));
+    }
+    .utility {
+      position: relative; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between; gap: 20px;
+      min-height: 52px; padding: 0 clamp(14px, 3vw, 36px);
+      font-size: 10px; font-weight: 900; letter-spacing: .12em;
+    }
+    .utility::after {
+      content: "FRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAME";
+      position: absolute; left: 0; right: 0; bottom: -4px;
+      overflow: hidden; color: var(--paper); line-height: 1;
+      letter-spacing: -.04em; white-space: nowrap;
+    }
+    .brand {
+      display: flex; gap: 10px; align-items: baseline; margin: 0;
+      font-size: 11px; letter-spacing: .08em;
+    }
+    .brand span:last-child { color: var(--acid); }
+    .utility-actions {
+      display: flex; align-items: center; gap: clamp(12px, 2vw, 24px);
+    }
+    .utility-button {
+      border: 0; padding: 8px 0; color: var(--paper); background: transparent;
+      font-size: 9px; font-weight: 900; letter-spacing: .1em; cursor: pointer;
+    }
+    .utility-button:hover, .utility-button:focus-visible {
+      color: var(--acid); outline: 0; text-decoration: underline;
+      text-decoration-thickness: 2px; text-underline-offset: 4px;
+    }
+    .utility-button:disabled { cursor: wait; opacity: .72; }
+    .stage {
+      position: relative; z-index: 1;
+      min-height: calc(100vh - 54px);
+      display: grid; grid-template-columns: minmax(0, 1fr); place-items: center;
+      padding: clamp(18px, 3vh, 32px) clamp(12px, 4vw, 52px);
+    }
+    .slot-shell {
+      width: 100%; max-width: 900px; min-width: 0; justify-self: center;
+      text-align: center;
+    }
+    .machine-title {
+      margin: 0 0 clamp(14px, 2vw, 20px);
+      color: var(--acid);
+      font-size: clamp(28px, 4.2vw, 48px); font-weight: 900;
+      line-height: .82; letter-spacing: -.08em;
+      text-transform: uppercase;
+      text-shadow: 5px 5px 0 var(--blue);
+    }
+    .slot-rig {
+      width: 100%; min-width: 0;
+      display: grid; grid-template-columns: minmax(0, 1fr) clamp(96px, 11vw, 120px);
+      align-items: stretch; gap: clamp(8px, 1.2vw, 12px);
+    }
+    .machine {
+      position: relative; width: 100%; min-width: 0; overflow: hidden;
+      padding: clamp(20px, 2vw, 22px) clamp(12px, 1.4vw, 16px);
+      background: rgba(16,16,15,.88);
+    }
+    .machine::before, .machine::after {
+      content: "FRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAME";
+      position: absolute; top: 0; bottom: 0;
+      z-index: 4; overflow: hidden; color: var(--red);
+      font-size: clamp(6px, .7vw, 8px); font-weight: 900;
+      line-height: 1; letter-spacing: .08em; white-space: nowrap;
+      writing-mode: vertical-rl; pointer-events: none;
+    }
+    .machine::before { left: 0; }
+    .machine::after { right: 0; }
+    .frame-line {
+      position: absolute; left: 0; right: 0; z-index: 5;
+      display: block; width: 100%; overflow: hidden;
+      color: var(--paper); font-size: clamp(10px, 1.25vw, 14px);
+      font-weight: 900; line-height: .7; letter-spacing: -.2em;
+      white-space: nowrap; text-align: left;
+    }
+    .frame-line:not(.bottom) { top: 0; }
+    .frame-line.bottom { bottom: 0; color: var(--red); }
+    .machine-meta {
+      display: flex; justify-content: space-between; gap: 12px;
+      padding: 11px 8px 9px;
+      color: var(--pink); font-size: clamp(7px, .9vw, 9px);
+      font-weight: 900; letter-spacing: .12em;
+    }
+    .machine-meta span {
+      min-width: 0; overflow: hidden; text-overflow: clip; white-space: nowrap;
+    }
+    .machine-meta span:last-child { color: var(--acid); }
+    .reels {
+      position: relative;
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0; padding: clamp(6px, 1vw, 10px) 0;
+    }
+    .reels::before, .reels::after {
+      position: absolute; left: 0; right: 0; z-index: 3;
+      overflow: hidden; color: var(--blue); font-size: clamp(8px, 1.2vw, 13px);
+      font-weight: 900; letter-spacing: -.16em; white-space: nowrap;
+      pointer-events: none;
+    }
+    .reels::before {
+      content: "SCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREEN";
+      top: -2px;
+    }
+    .reels::after {
+      content: "SCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREEN";
+      bottom: -2px;
+    }
+    .reel {
+      position: relative; min-width: 0; min-height: clamp(150px, 15vw, 180px);
+      display: grid; grid-template-rows: auto 1fr auto; align-items: center;
+      overflow: hidden; color: var(--paper);
+    }
+    .column-divider {
+      position: absolute; top: 0; bottom: 0; z-index: 4;
+      overflow: hidden; color: var(--paper);
+      font-size: clamp(5px, .55vw, 7px); font-weight: 900;
+      line-height: 1; letter-spacing: .08em; white-space: nowrap;
+      writing-mode: vertical-rl; transform: translateX(-50%);
+      pointer-events: none;
+    }
+    .column-divider.one { left: 33.333%; }
+    .column-divider.two { left: 66.666%; }
+    .reel-cap {
+      position: relative; z-index: 1; padding: 10px 18px 6px;
+      overflow: hidden; color: var(--muted);
+      font-size: clamp(9px, 1.2vw, 13px); font-weight: 900;
+      line-height: 1; white-space: nowrap;
+    }
+    .reel-cap.bottom { padding: 6px 18px 10px; }
+    .reel-symbol {
+      position: relative; z-index: 1;
+      display: grid; place-items: center; min-width: 0; min-height: 88px;
+      padding: 4px;
+      font-size: clamp(22px, 3.8vw, 42px); font-weight: 900;
+      line-height: .75; letter-spacing: -.12em;
+      transition: color .1s, transform .1s;
+    }
+    .reel-symbol[data-symbol="SEVEN"], .reel-symbol[data-symbol="BELL"] { color: var(--red); }
+    .reel-symbol[data-symbol="LUCK"] { color: var(--acid); }
+    .reel-symbol[data-symbol="STAR"] { color: var(--pink); }
+    .reel.is-spinning .reel-symbol {
+      animation: reel-type .085s steps(2, end) infinite;
+      text-shadow: 0 .65em 0 var(--blue), 0 -.65em 0 var(--red);
+    }
+    .reel.is-spinning .reel-cap { animation: stream .12s linear infinite; }
+    @keyframes reel-type {
+      0% { transform: translateY(-14%) skewY(-6deg); opacity: .75; }
+      50% { transform: translateY(14%) skewY(5deg); opacity: 1; }
+      100% { transform: translateY(-14%) skewY(-6deg); opacity: .75; }
+    }
+    @keyframes stream { 50% { transform: translateX(-12px); } }
+    .readout {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center; gap: 12px;
+      padding: 12px 8px 9px;
+    }
+    #result {
+      min-width: 0; overflow: hidden; color: var(--acid);
+      font-size: clamp(13px, 1.8vw, 20px); font-weight: 900;
+      letter-spacing: -.04em; text-align: left;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    #result::before { content: "RESULT "; color: var(--red); }
+    .score {
+      display: flex; gap: 14px; color: var(--muted);
+      font-size: clamp(7px, .9vw, 9px); font-weight: 900;
+      letter-spacing: .08em; white-space: nowrap;
+    }
+    .score strong { margin-left: 4px; color: var(--paper); font-size: 1.25em; }
+    .lever {
+      position: relative; min-width: 0; border: 0; padding: 0;
+      color: var(--paper); background: transparent; cursor: grab;
+      display: grid; grid-template-rows: auto 1fr auto; justify-items: center;
+      touch-action: manipulation;
+    }
+    .lever:active { cursor: grabbing; }
+    .lever:focus-visible {
+      outline: 0;
+    }
+    .lever:focus-visible .lever-cap { color: var(--acid); text-shadow: 2px 2px 0 var(--blue); }
+    .lever-cap {
+      position: relative; z-index: 2;
+      width: 100%; min-width: 0; max-width: 100%; min-height: clamp(72px, 10vw, 108px);
+      display: grid; place-items: center;
+      overflow: hidden;
+      color: var(--red); background: transparent;
+      font-size: clamp(10px, 1.3vw, 15px); font-weight: 900;
+      line-height: .72; letter-spacing: -.1em; white-space: nowrap;
+      transition: transform .16s cubic-bezier(.2,.9,.3,1), color .16s;
+    }
+    .lever-cap > span { display: block; }
+    .lever-cap .cap-mid { color: var(--paper); }
+    #leverLabel {
+      display: inline-block; min-width: 4ch; color: var(--acid);
+      letter-spacing: -.12em; text-align: center;
+    }
+    .lever-stem {
+      position: relative; z-index: 1;
+      width: 100%; min-width: 0; max-width: 100%; display: grid; place-items: center;
+      overflow: hidden; color: var(--acid);
+      font-size: clamp(16px, 2vw, 24px); font-weight: 900;
+      line-height: .68; white-space: pre;
+      transition: transform .16s cubic-bezier(.2,.9,.3,1);
+    }
+    .lever-stem::after {
+      content: "PULL\APULL\APULL\APULL\APULL\APULL\APULL\APULL";
+      white-space: pre; letter-spacing: 0;
+    }
+    .lever-pivot {
+      width: 100%; min-width: 0; max-width: 100%; min-height: clamp(58px, 8vw, 82px);
+      display: grid; place-items: center;
+      overflow: hidden;
+      color: var(--blue); font-size: clamp(26px, 3.8vw, 44px);
+      font-weight: 900; line-height: 1;
+    }
+    .lever-pivot::before {
+      content: "BASE\A BASE";
+      color: var(--blue); font-size: .34em; line-height: .8; white-space: pre;
+    }
+    .lever:hover .lever-cap { color: var(--acid); }
+    .lever:active .lever-cap, .lever.is-pulled .lever-cap {
+      transform: translateY(clamp(92px, 17vw, 180px)) rotate(2deg);
+      color: var(--acid);
+    }
+    .lever:active .lever-stem, .lever.is-pulled .lever-stem {
+      transform: scaleY(.45) translateY(25%);
+    }
+    .lever:disabled { cursor: wait; }
+    .lever:disabled .lever-cap { color: var(--acid); }
+    .win-flash .machine-title {
+      animation: jackpot-type .45s steps(2, end) 7;
+    }
+    .win-flash .reel-symbol {
+      color: var(--ink); background: var(--acid);
+      text-shadow: 4px 4px 0 var(--red);
+    }
+    .win-flash .frame-line { color: var(--acid); }
+    @keyframes jackpot-type {
+      0%, 100% { transform: translate(0); color: var(--acid); }
+      33% { transform: translate(-7px, 3px); color: var(--pink); }
+      66% { transform: translate(7px, -3px); color: var(--red); }
+    }
+    .confetti {
+      position: fixed; inset: 0; z-index: 50; overflow: hidden; pointer-events: none;
+    }
+    .confetti-piece {
+      position: absolute; top: 0; left: 0; width: auto; height: auto;
+      color: var(--paper); background: transparent !important;
+      font-family: var(--mono); font-size: 15px; font-style: normal; font-weight: 900;
+      will-change: transform;
+    }
+    @media (max-width: 620px) {
+      .utility { min-height: 46px; padding-inline: 12px; }
+      .brand { font-size: 9px; }
+      .utility-actions { gap: 10px; }
+      .utility-button { font-size: 8px; }
+      .stage {
+        min-height: calc(100svh - 48px);
+        padding: 22px 8px 30px;
+      }
+      .machine-title {
+        margin-bottom: 14px; font-size: clamp(28px, 9vw, 38px);
+        text-shadow: 2px 2px 0 var(--blue);
+      }
+      .slot-rig { grid-template-columns: minmax(0, 1fr) 68px; gap: 3px; }
+      .machine { padding: 7px 2px; }
+      .frame-line { font-size: 9px; }
+      .machine-meta { padding-inline: 5px; font-size: 6px; }
+      .reels { gap: 0; padding-block: 5px; }
+      .reel { min-height: 158px; }
+      .column-divider { font-size: 5px; }
+      .reel-cap { padding: 6px 6px 3px; font-size: 8px; }
+      .reel-cap.bottom { padding: 4px 8px 7px; }
+      .reel-symbol { min-height: 88px; font-size: clamp(16px, 5.2vw, 22px); }
+      .readout { grid-template-columns: 1fr; gap: 7px; padding-inline: 5px; }
+      #result { font-size: 12px; }
+      .score { justify-content: flex-start; font-size: 7px; }
+      .lever-cap { min-height: 54px; font-size: 7px; }
+      #leverLabel { font-size: 13px; }
+      .lever-stem { font-size: 14px; }
+      .lever-pivot { min-height: 42px; font-size: 26px; }
+      .lever:active .lever-cap, .lever.is-pulled .lever-cap {
+        transform: translateY(98px) rotate(2deg);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+      .confetti-piece {
+        animation: none !important;
+        opacity: .78;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#game">게임으로 바로가기</a>
+  <div class="type-stage" aria-hidden="true">
+    <canvas id="typeField" data-pretext="active"></canvas>
+  </div>
+  <header class="utility">
+    <h1 class="brand"><span>TRIPLE</span><span>NOISE_03</span></h1>
+    <div class="utility-actions">
+      <button id="shareButton" class="utility-button" type="button">SHARE</button>
+      <button id="soundToggle" class="utility-button" type="button" aria-pressed="true">SOUND: ON</button>
+    </div>
+  </header>
+  <main id="game" class="stage">
+    <section class="slot-shell" aria-label="3열 타이포그래피 슬롯 게임">
+      <p class="machine-title" aria-hidden="true">SLOT SLOT SLOT</p>
+      <div class="slot-rig">
+        <div class="machine">
+          <span class="frame-line" aria-hidden="true">FRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAME</span>
+          <div class="machine-meta"><span>REEL_01 / REEL_02 / REEL_03</span><span>READY_TO_PULL</span></div>
+          <div class="reels" aria-label="슬롯 결과">
+            <span class="column-divider one" aria-hidden="true">SCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREEN</span>
+            <span class="column-divider two" aria-hidden="true">SCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREENSCREEN</span>
+            <div class="reel">
+              <span class="reel-cap" aria-hidden="true">SEVEN BAR STAR</span>
+              <div id="reel0" class="reel-symbol" data-symbol="SEVEN">SEVEN</div>
+              <span class="reel-cap bottom" aria-hidden="true">LUCK BELL SEVEN</span>
+            </div>
+            <div class="reel">
+              <span class="reel-cap" aria-hidden="true">STAR SEVEN BELL</span>
+              <div id="reel1" class="reel-symbol" data-symbol="LUCK">LUCK</div>
+              <span class="reel-cap bottom" aria-hidden="true">BAR LUCK STAR</span>
+            </div>
+            <div class="reel">
+              <span class="reel-cap" aria-hidden="true">BELL LUCK BAR</span>
+              <div id="reel2" class="reel-symbol" data-symbol="BAR">BAR</div>
+              <span class="reel-cap bottom" aria-hidden="true">SEVEN STAR BELL</span>
+            </div>
+          </div>
+          <div class="readout">
+            <strong id="result" role="status" aria-live="polite">READY</strong>
+            <div class="score" aria-label="게임 기록">
+              <span>SPIN:<strong id="spinCount">0</strong></span>
+              <span>HIT:<strong id="hitCount">0</strong></span>
+            </div>
+          </div>
+          <span class="frame-line bottom" aria-hidden="true">FRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAMEFRAME</span>
+        </div>
+        <button id="spinButton" class="lever" type="button" aria-label="PULL 레버 당기기">
+          <span class="lever-cap" aria-hidden="true">
+            <span>HANDLEHANDLE</span>
+            <span class="cap-mid"><span id="leverLabel">PULL</span></span>
+            <span>HANDLEHANDLE</span>
+          </span>
+          <span class="lever-stem" aria-hidden="true"></span>
+          <span class="lever-pivot" aria-hidden="true"></span>
+        </button>
+      </div>
+    </section>
+  </main>
+  <div id="confetti" class="confetti" aria-hidden="true"></div>
+  <script nonce="__NONCE__">/*__GAME_BUNDLE__*/</script>
+</body>
+</html>
