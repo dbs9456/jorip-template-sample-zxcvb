@@ -1,0 +1,10 @@
+{
+  "onboarding_schema_version": 3,
+  "agent_guide_updated_at": "2026-07-19",
+  "project_id": "zxcvb",
+  "project_slug": "zxcvb",
+  "default_url": "https://zxcvb.joripspace.run",
+  "api_base_url": "https://api.joripspace.com",
+  "mcp_url": "https://api.joripspace.com/mcp",
+  "linked_account_id": "acct_308260a354aa4737aa7ef373"
+}

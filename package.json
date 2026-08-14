@@ -1,0 +1,25 @@
+{
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-game.mjs",
+    "check": "npm run build && node --check worker.js",
+    "preview": "node scripts/preview-game.mjs",
+    "argo:test": "node scripts/argo-test.mjs",
+    "joripspace:doctor": "node .joripspace/doctor.mjs",
+    "joripspace:save": "node .joripspace/save.mjs",
+    "joripspace:checkpoints": "node .joripspace/checkpoints.mjs",
+    "joripspace:restore": "node .joripspace/restore.mjs",
+    "joripspace:deploy-checkpoint": "node .joripspace/deploy-checkpoint.mjs",
+    "joripspace:deploy": "node .joripspace/save.mjs --deploy",
+    "joripspace:pull": "node .joripspace/pull.mjs",
+    "joripspace:pull:force": "node .joripspace/pull.mjs --force",
+    "deploy": "node .joripspace/save.mjs --deploy"
+  },
+  "dependencies": {
+    "@chenglou/pretext": "^0.0.8",
+    "fflate": "^0.8.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}
