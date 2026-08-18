@@ -1,0 +1,131 @@
+# joripspace-template-workflow-version: 1
+name: JoripSpace Template Publish
+
+on:
+  push:
+    branches:
+      - "joripspace-template"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: "joripspace-template-template_6e0f3525-e92a-43a2-8f8e-364adad8561e"
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Build Git Bundle and files archive
+        shell: bash
+        env:
+          JORIPSPACE_TEMPLATE_ID: "template_6e0f3525-e92a-43a2-8f8e-364adad8561e"
+          JORIPSPACE_MANIFEST_PATH: "joripspace-template.json"
+        run: |
+          set -euo pipefail
+          manifest="$GITHUB_WORKSPACE/$JORIPSPACE_MANIFEST_PATH"
+          test -f "$manifest" || { echo "joripspace-template.json is required" >&2; exit 1; }
+          source_root=$(node -e 'const m=require(process.argv[1]); const v=String(m.source_root || "."); if (v !== "." && (v.startsWith("/") || v.includes("\\") || v.split("/").some((p) => !p || p === "." || p === ".."))) throw new Error("Unsafe source_root"); process.stdout.write(v)' "$manifest")
+          if [[ "$source_root" == "." ]]; then
+            distribution_sha="$GITHUB_SHA"
+          else
+            distribution_sha=$(git subtree split --prefix="$source_root" "$GITHUB_SHA")
+          fi
+          if git ls-tree -r "$distribution_sha" | grep -Eq '^(120000|160000) '; then
+            echo "Symlinks and submodules are not allowed in a template release" >&2
+            exit 1
+          fi
+          bare="$RUNNER_TEMP/joripspace-template-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.git"
+          bundle="$RUNNER_TEMP/joripspace-template-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.bundle"
+          archive="$RUNNER_TEMP/joripspace-template-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.tar.gz"
+          stage="$RUNNER_TEMP/joripspace-template-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-stage"
+          git init --bare "$bare"
+          git push "$bare" "$distribution_sha:refs/heads/main"
+          git --git-dir="$bare" bundle create --version=2 "$bundle" refs/heads/main
+          git --git-dir="$bare" bundle verify "$bundle"
+          mkdir -p "$stage/release"
+          if [[ "$source_root" == "." ]]; then
+            git archive "$GITHUB_SHA" | tar -x -C "$stage/release"
+          else
+            mkdir -p "$stage/release/$source_root"
+            git archive "$GITHUB_SHA:$source_root" | tar -x -C "$stage/release/$source_root"
+          fi
+          cp "$manifest" "$stage/release/joripspace-template.json"
+          tar -czf "$archive" -C "$stage" release
+          file_count=$(git ls-tree -r --name-only "$distribution_sha" | wc -l | tr -d ' ')
+          source_bytes=$(git ls-tree -r -l "$distribution_sha" | awk '{ total += $4 } END { print total + 0 }')
+          echo "JORIPSPACE_BUNDLE_PATH=$bundle" >> "$GITHUB_ENV"
+          echo "JORIPSPACE_ARCHIVE_PATH=$archive" >> "$GITHUB_ENV"
+          echo "JORIPSPACE_MANIFEST_PATH=$manifest" >> "$GITHUB_ENV"
+          echo "JORIPSPACE_FILE_COUNT=$file_count" >> "$GITHUB_ENV"
+          echo "JORIPSPACE_SOURCE_BYTES=$source_bytes" >> "$GITHUB_ENV"
+      - name: Publish to JoripSpace
+        shell: bash
+        env:
+          JORIPSPACE_TEMPLATE_ID: "template_6e0f3525-e92a-43a2-8f8e-364adad8561e"
+          JORIPSPACE_API_URL: "https://api.joripspace.com"
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'JORIPSPACE_SCRIPT'
+          async function inlineTemplatePublishMain() {
+            const { readFile } = await import('node:fs/promises');
+            const audience = 'https://api.joripspace.com/v1/template-publish/github';
+            const templateId = requiredEnv('JORIPSPACE_TEMPLATE_ID');
+            const apiUrl = requiredEnv('JORIPSPACE_API_URL').replace(/\/+$/, '');
+            const [bundle, archive, manifest] = await Promise.all([
+              readFile(requiredEnv('JORIPSPACE_BUNDLE_PATH')),
+              readFile(requiredEnv('JORIPSPACE_ARCHIVE_PATH')),
+              readFile(requiredEnv('JORIPSPACE_MANIFEST_PATH')),
+            ]);
+            const form = new FormData();
+            form.append('bundle', new Blob([bundle], { type: 'application/x-git-bundle' }), 'template.bundle');
+            form.append('archive', new Blob([archive], { type: 'application/gzip' }), 'template.tar.gz');
+            form.append('manifest', new Blob([manifest], { type: 'application/json' }), 'joripspace-template.json');
+            form.append('file_count', requiredEnv('JORIPSPACE_FILE_COUNT'));
+            form.append('source_bytes', requiredEnv('JORIPSPACE_SOURCE_BYTES'));
+            const token = await requestOidcToken();
+            const response = await fetch(`${apiUrl}/v1/template-publish/${encodeURIComponent(templateId)}/versions`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+              body: form,
+            });
+            const text = await response.text();
+            const payload = text ? safeJson(text) : {};
+            if (!response.ok)
+              throw new Error(payload?.error?.message || `JoripSpace publish failed (${response.status}).`);
+            process.stdout.write(`JoripSpace template published: ${payload.version || payload.version_id}\n`);
+
+            async function requestOidcToken() {
+              const requestUrl = requiredEnv('ACTIONS_ID_TOKEN_REQUEST_URL');
+              const requestToken = requiredEnv('ACTIONS_ID_TOKEN_REQUEST_TOKEN');
+              const separator = requestUrl.includes('?') ? '&' : '?';
+              const response = await fetch(`${requestUrl}${separator}audience=${encodeURIComponent(audience)}`, {
+                headers: { Authorization: `Bearer ${requestToken}` },
+              });
+              const payload = await response.json().catch(() => ({}));
+              if (!response.ok || typeof payload.value !== 'string')
+                throw new Error(`GitHub OIDC token request failed (${response.status}).`);
+              return payload.value;
+            }
+            function safeJson(value) {
+              try {
+                return JSON.parse(value);
+              } catch {
+                return { error: { message: value.slice(0, 500) } };
+              }
+            }
+            function requiredEnv(name) {
+              const value = process.env[name];
+              if (!value) throw new Error(`${name} is required.`);
+              return value;
+            }
+          }
+
+          await inlineTemplatePublishMain();
+          JORIPSPACE_SCRIPT
