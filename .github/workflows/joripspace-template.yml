@@ -1,11 +1,9 @@
-# joripspace-template-workflow-version: 1
+# joripspace-template-workflow-version: 2
 name: JoripSpace Template Publish
 
 on:
-  push:
-    branches:
-      - "joripspace-template"
-  workflow_dispatch:
+  release:
+    types: [published]
 
 permissions:
   contents: read
