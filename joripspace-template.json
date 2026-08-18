@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "template_id": "template_1fcb0e87434c797912cad094",
+  "template_id": "template_96f8517b8bdabbc83ecccbf5",
   "slug": "zxcvb",
   "name": "zxcvb",
-  "version": "1.0.1",
-  "description": "JoripSpace Git Bundle 배포 테스트 템플릿",
+  "version": "1.0.2",
+  "description": "",
   "category": "general",
   "source_root": ".",
   "default_ref": "main",
