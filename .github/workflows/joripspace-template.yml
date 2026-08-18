@@ -23,7 +23,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "joripspace-template-template_1fcb0e87434c797912cad094"
+  group: "joripspace-template-template_96f8517b8bdabbc83ecccbf5"
   cancel-in-progress: false
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
       - name: Build Git Bundle and files archive
         shell: bash
         env:
-          JORIPSPACE_TEMPLATE_ID: "template_1fcb0e87434c797912cad094"
+          JORIPSPACE_TEMPLATE_ID: "template_96f8517b8bdabbc83ecccbf5"
           JORIPSPACE_MANIFEST_PATH: "joripspace-template.json"
           JORIPSPACE_SOURCE_BRANCH: "main"
         run: |
@@ -82,7 +82,7 @@ jobs:
       - name: Publish to JoripSpace
         shell: bash
         env:
-          JORIPSPACE_TEMPLATE_ID: "template_1fcb0e87434c797912cad094"
+          JORIPSPACE_TEMPLATE_ID: "template_96f8517b8bdabbc83ecccbf5"
           JORIPSPACE_API_URL: "https://api.joripspace.com"
         run: |
           set -euo pipefail
