@@ -1,10 +1,12 @@
 {
   "schema_version": 1,
-  "slug": "triple-noise",
-  "name": "TRIPLE NOISE",
+  "template_id": "template_8f5fb591d8e72fbca0d4721b",
+  "slug": "zxcvb",
+  "name": "zxcvb",
   "version": "1.0.0",
-  "description": "실제 결제 없이 즐기는 3열 타이포그래피 슬롯 미니게임",
-  "category": "game",
-  "source_root": "template",
-  "entrypoint": "worker.js"
+  "description": "",
+  "category": "general",
+  "source_root": ".",
+  "default_ref": "main",
+  "manifest_path": "joripspace-template.json"
 }
