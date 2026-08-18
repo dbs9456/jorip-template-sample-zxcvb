@@ -25,10 +25,13 @@ jobs:
         env:
           JORIPSPACE_TEMPLATE_ID: "template_6e0f3525-e92a-43a2-8f8e-364adad8561e"
           JORIPSPACE_MANIFEST_PATH: "joripspace-template.json"
+          JORIPSPACE_SOURCE_BRANCH: "joripspace-template"
         run: |
           set -euo pipefail
           manifest="$GITHUB_WORKSPACE/$JORIPSPACE_MANIFEST_PATH"
           test -f "$manifest" || { echo "joripspace-template.json is required" >&2; exit 1; }
+          git show-ref --verify --quiet "refs/remotes/origin/$JORIPSPACE_SOURCE_BRANCH" || { echo "Registered source branch was not fetched" >&2; exit 1; }
+          git merge-base --is-ancestor "$GITHUB_SHA" "refs/remotes/origin/$JORIPSPACE_SOURCE_BRANCH" || { echo "Release tag must point to a commit on the registered source branch" >&2; exit 1; }
           source_root=$(node -e 'const m=require(process.argv[1]); const v=String(m.source_root || "."); if (v !== "." && (v.startsWith("/") || v.includes("\\") || v.split("/").some((p) => !p || p === "." || p === ".."))) throw new Error("Unsafe source_root"); process.stdout.write(v)' "$manifest")
           if [[ "$source_root" == "." ]]; then
             distribution_sha="$GITHUB_SHA"
