@@ -1,4 +1,17 @@
-# joripspace-template-workflow-version: 2
+# joripspace-template-workflow-version: 3
+#
+# JoripSpace 템플릿 배포 가이드
+# 1. 이 파일과 joripspace-template.json이 추가된 설정 PR을 기본 브랜치에 병합합니다.
+# 2. 새 버전을 배포할 때 joripspace-template.json의 version을 올리고 변경사항을 커밋합니다.
+# 3. GitHub 저장소의 Releases에서 새 태그를 만들고 Release를 Publish합니다.
+# 4. Actions 탭의 "JoripSpace Template Publish" 작업이 초록색으로 완료되는지 확인합니다.
+#
+# 알아두세요
+# - 일반 push나 Release 초안 저장만으로는 배포되지 않습니다. Published Release만 배포됩니다.
+# - 별도 API 키나 Secret은 필요하지 않습니다. GitHub OIDC로 저장소와 Release를 검증합니다.
+# - Release 태그는 아래에 지정된 기준 브랜치에 포함된 커밋을 가리켜야 합니다.
+# - 오류가 나면 Actions 실행에서 실패한 단계와 메시지를 먼저 확인하세요.
+# - 이 워크플로와 joripspace-template.json을 삭제하면 이후 업데이트를 배포할 수 없습니다.
 name: JoripSpace Template Publish
 
 on:
@@ -10,7 +23,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "joripspace-template-template_8f5fb591d8e72fbca0d4721b"
+  group: "joripspace-template-template_1fcb0e87434c797912cad094"
   cancel-in-progress: false
 
 jobs:
@@ -23,7 +36,7 @@ jobs:
       - name: Build Git Bundle and files archive
         shell: bash
         env:
-          JORIPSPACE_TEMPLATE_ID: "template_8f5fb591d8e72fbca0d4721b"
+          JORIPSPACE_TEMPLATE_ID: "template_1fcb0e87434c797912cad094"
           JORIPSPACE_MANIFEST_PATH: "joripspace-template.json"
           JORIPSPACE_SOURCE_BRANCH: "main"
         run: |
@@ -69,11 +82,13 @@ jobs:
       - name: Publish to JoripSpace
         shell: bash
         env:
-          JORIPSPACE_TEMPLATE_ID: "template_8f5fb591d8e72fbca0d4721b"
+          JORIPSPACE_TEMPLATE_ID: "template_1fcb0e87434c797912cad094"
           JORIPSPACE_API_URL: "https://api.joripspace.com"
         run: |
           set -euo pipefail
           node --input-type=module <<'JORIPSPACE_SCRIPT'
+          // Cloudflare's production bundler may annotate nested function names with
+          // __name(). Keep the generated standalone Node script compatible with it.
           const __name = (value) => value;
           async function inlineTemplatePublishMain() {
                 const { readFile } = await import("node:fs/promises");
